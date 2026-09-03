@@ -62,7 +62,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       body: JSON.stringify({ key: "showcase", value: next }),
     }).catch((err) => {
       console.warn("Showcase save error:", err);
-      showToast("تعذر حفظ إعدادات المربع المميز في قاعدة البيانات ⚠️");
+      showToast("تعذر حفظ إعدادات المربع المميز ⚠️");
     });
   };
 
@@ -182,10 +182,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             : p
         );
         onProductsUpdate(updatedProducts);
-        showToast(`تم تحديث بيانات "${title.slice(0, 24)}..." على كل الأجهزة! 💾`);
+        showToast(`تم تحديث بيانات "${title.slice(0, 24)}..." بنجاح! 💾`);
       } catch (err) {
         console.warn("Product update error:", err);
-        showToast("تعذر حفظ التعديل في قاعدة البيانات — حاول مرة أخرى ⚠️");
+        showToast("تعذر حفظ التعديل في قاعدة البيانات ⚠️");
         return;
       }
     } else {
@@ -208,10 +208,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         if (!data.success || !data.product) throw new Error(data.message || "insert failed");
 
         onProductsUpdate([data.product as Product, ...products]);
-        showToast(`تمت إضافة "${title.slice(0, 24)}..." إلى المتجر على كل الأجهزة! 🚀`);
+        showToast(`تمت إضافة "${title.slice(0, 24)}..." إلى المتجر! 🚀`);
       } catch (err) {
         console.warn("Product insert error:", err);
-        showToast("تعذر إضافة المنتج في قاعدة البيانات — حاول مرة أخرى ⚠️");
+        showToast("تعذر إضافة المنتج في قاعدة البيانات ⚠️");
         return;
       }
     }
@@ -234,7 +234,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         throw new Error(data.message || "delete failed");
       }
 
-      // تحديث القائمة محلياً فقط بعد نجاح الحذف الفعلي من قاعدة البيانات Supabase
+      // التحديث الفوري للحالة المحلية بعد نجاح الحذف بقاعدة البيانات لمنع عودته
       onProductsUpdate(products.filter((p) => p.id !== id));
       showToast("تم حذف المنتج من المتجر بنجاح 🗑️");
     } catch (err) {
