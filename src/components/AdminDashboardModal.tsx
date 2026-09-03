@@ -224,20 +224,22 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       return;
     }
 
-    const previousProducts = [...products];
-    onProductsUpdate(products.filter((p) => p.id !== id));
-    showToast("جاري حذف المنتج...");
+    showToast("جاري حذف المنتج من قاعدة البيانات...");
 
     try {
       const res = await fetch(`/api/products?id=${id}`, { method: "DELETE" });
       const data = await res.json();
-      if (!data.success) throw new Error(data.message || "delete failed");
+      
+      if (!data.success) {
+        throw new Error(data.message || "delete failed");
+      }
 
+      // تحديث القائمة محلياً فقط بعد نجاح الحذف الفعلي من قاعدة البيانات Supabase
+      onProductsUpdate(products.filter((p) => p.id !== id));
       showToast("تم حذف المنتج من المتجر بنجاح 🗑️");
     } catch (err) {
       console.warn("Product delete error:", err);
-      onProductsUpdate(previousProducts);
-      showToast("تعذر الاتصال بقاعدة البيانات للحذف ⚠️");
+      showToast("تعذر حذف المنتج من قاعدة البيانات — تأكد من الاتصال ⚠️");
     }
   };
 
