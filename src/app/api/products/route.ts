@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
     let dbProducts = await db.select().from(products);
 
-    // التحقق فقط إذا كانت القاعدة فارغة تماماً لأول مرة (وليس عند حذف منتج معين)
+    // التحقق فقط إذا كانت القاعدة فارغة تماماً لأول مرة
     if (!dbProducts || dbProducts.length === 0) {
       try {
         for (const item of INITIAL_PRODUCTS) {
@@ -89,7 +89,17 @@ export async function GET(request: Request) {
       );
     }
 
-    return NextResponse.json({ success: true, products: filtered });
+    // إرجاع البيانات مع منع التخزين المؤقت تماماً (No Cache) لضمان عدم عودة المحذوف
+    return NextResponse.json(
+      { success: true, products: filtered },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error) {
     console.error("Products API GET error:", error);
     return NextResponse.json({ success: false, products: [] });
