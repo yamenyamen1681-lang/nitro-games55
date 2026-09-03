@@ -46,13 +46,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   showcase,
   onShowcaseUpdate,
 }) => {
-  // ===== Featured Showcase editor state =====
   const [tab, setTab] = useState<"products" | "showcase">("products");
   const [sc, setSc] = useState<ShowcaseConfig>(showcase ?? DEFAULT_SHOWCASE);
-  const [pickerCat, setPickerCat] = useState<string>("all");
-  const [pickerQuery, setPickerQuery] = useState("");
-
-  // Keep local editor in sync when opened / config changes externally
+  
   React.useEffect(() => {
     if (isOpen && showcase) setSc(showcase);
   }, [isOpen, showcase]);
@@ -70,12 +66,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     });
   };
 
-  // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [authError, setAuthError] = useState("");
 
-  // Product form state
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<CategoryType>("keyboards");
@@ -86,7 +80,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [badge, setBadge] = useState("");
   const [imageUrl, setImageUrl] = useState("/images/keyboard-custom-rgb.jpg");
 
-  // Admin filter & search
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
 
