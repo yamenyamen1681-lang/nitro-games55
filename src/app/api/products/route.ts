@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { products } from "@/db/schema";
 import { ensureDbReady } from "@/db/schema";
-import { INITIAL_PRODUCTS, Product, CategoryType } from "@/lib/data";
+import { Product, CategoryType } from "@/lib/data";
 import { eq } from "drizzle-orm";
 
 export async function GET(request: Request) {
@@ -11,40 +11,10 @@ export async function GET(request: Request) {
     const category = searchParams.get("category");
     const query = searchParams.get("q")?.toLowerCase();
 
-    // تهيئة الجداول تلقائياً عند أول تشغيل فقط
+    // تهيئة الجدول فقط إن لم يكن موجوداً، دون إعادة إدخال المنتجات المحذوفة
     await ensureDbReady();
 
     let dbProducts = await db.select().from(products);
-
-    // التحقق فقط إذا كانت القاعدة فارغة تماماً لأول مرة
-    if (!dbProducts || dbProducts.length === 0) {
-      try {
-        for (const item of INITIAL_PRODUCTS) {
-          await db.insert(products).values({
-            slug: item.slug,
-            title: item.title,
-            titleEn: item.titleEn,
-            brand: item.brand,
-            category: item.category,
-            price: item.price,
-            originalPrice: item.originalPrice ?? null,
-            discountPercent: item.discountPercent ?? 0,
-            image: item.image,
-            inStock: item.inStock,
-            stockQuantity: item.stockQuantity,
-            rating: item.rating,
-            reviewCount: item.reviewCount,
-            badge: item.badge ?? null,
-            description: item.description,
-            specs: item.specs,
-            isFeatured: item.isFeatured,
-          });
-        }
-        dbProducts = await db.select().from(products);
-      } catch (seedErr) {
-        console.warn("DB seed warning:", seedErr);
-      }
-    }
 
     const validCategories = ["keyboards", "mice", "mousepads", "microphones", "headsets"];
 
