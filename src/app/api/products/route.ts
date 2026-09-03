@@ -190,7 +190,7 @@ export async function PUT(request: Request) {
         badge: badge || null,
         description: description || "",
       })
-      .where(eq(products.id, id)) // تم إزالة Number() ليتوافق مع الـ UUID
+      .where(eq(products.id, Number(id)))
       .returning();
 
     return NextResponse.json({
@@ -220,7 +220,7 @@ export async function DELETE(request: Request) {
       );
     }
 
-    await db.delete(products).where(eq(products.id, id)); // تم إزالة Number() هنا أيضاً
+    await db.delete(products).where(eq(products.id, Number(id)));
 
     return NextResponse.json({
       success: true,
@@ -233,4 +233,4 @@ export async function DELETE(request: Request) {
       { status: 500 }
     );
   }
-}
+      }
