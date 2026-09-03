@@ -264,20 +264,27 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   };
 
   const handleDeleteProduct = async (id: number, prodTitle: string) => {
-    if (!confirm(`هل أنت متأكد من حذف المنتج: "${prodTitle}" من المتجر نهائياً؟`)) {
+    // استخدام حوار تأكيد مباشر وخفيف يعمل على كافة الهواتف
+    if (!window.confirm(`حذف نهائي للمنتج: "${prodTitle}"؟`)) {
       return;
     }
+
+    // تحديث الواجهة فوراً (Optimistic Update) لضمان الاستجابة السريعة
+    const previousProducts = [...products];
+    onProductsUpdate(products.filter((p) => p.id !== id));
+    showToast("جاري حذف المنتج...");
 
     try {
       const res = await fetch(`/api/products?id=${id}`, { method: "DELETE" });
       const data = await res.json();
       if (!data.success) throw new Error(data.message || "delete failed");
 
-      onProductsUpdate(products.filter((p) => p.id !== id));
-      showToast("تم حذف المنتج من المتجر على كل الأجهزة 🗑️");
+      showToast("تم حذف المنتج من المتجر بنجاح 🗑️");
     } catch (err) {
       console.warn("Product delete error:", err);
-      showToast("تعذر حذف المنتج من قاعدة البيانات — حاول مرة أخرى ⚠️");
+      // التراجع في حال حدوث خطأ بالسيرفر
+      onProductsUpdate(previousProducts);
+      showToast("تعذر الاتصال بقاعدة البيانات للحذف ⚠️");
     }
   };
 
@@ -725,8 +732,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       <option value="keyboards">⌨️ كيبورد</option>
                       <option value="mice">🖱️ ماوس</option>
                       <option value="mousepads">⬛ ماوس باد</option>
-                      <option value="microphones">🎙️ مايك</option>
-                      <option value="headsets">🎧 سماعات</option>
+                      <option value="audio">🎧 سماعات ومايكروفونات</option>
+                      <option value="accessories">⚡ إكسسوارات وقطع مخصصة</option>
                     </select>
                   </div>
                 </div>
@@ -734,16 +741,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="text-xs font-bold text-gray-300 block mb-1">
-                      السعر بالشيكل (₪) <span className="text-[#00a3ff]">*</span>
+                      السعر الحالي (بالشيكل ₪) <span className="text-[#00a3ff]">*</span>
                     </label>
                     <input
                       type="number"
+                      step="0.01"
                       required
-                      min="1"
-                      placeholder="مثال: 580"
+                      placeholder="مثال: 599"
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
-                      className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white font-mono rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
+                      className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
                     />
                   </div>
 
@@ -753,19 +760,21 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     </label>
                     <input
                       type="number"
-                      min="1"
-                      placeholder="مثال: 680"
+                      step="0.01"
+                      placeholder="مثال: 749"
                       value={originalPrice}
                       onChange={(e) => setOriginalPrice(e.target.value)}
-                      className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white font-mono rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
+                      className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-gray-300 block mb-1">العلامة التجارية</label>
+                    <label className="text-xs font-bold text-gray-300 block mb-1">
+                      الماركة / البراند
+                    </label>
                     <input
                       type="text"
-                      placeholder="مثال: Wooting / Razer / Logitech"
+                      placeholder="مثال: Wooting / Pulsar / Nitro Games"
                       value={brand}
                       onChange={(e) => setBrand(e.target.value)}
                       className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
@@ -773,93 +782,98 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-bold text-gray-300 block mb-1">شارة مميزة (تظهر فوق المنتج)</label>
-                    <input
-                      type="text"
-                      placeholder="مثال: 🔥 الأكثر مبيعاً في فلسطين"
-                      value={badge}
-                      onChange={(e) => setBadge(e.target.value)}
-                      className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-gray-300 block mb-1">رابط صورة المنتج</label>
-                    <input
-                      type="text"
-                      placeholder="أو اختر من القاذف الجاهز أدناه"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white font-mono rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
-                    />
-                  </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-300 block mb-1">
+                    الشارة الترويجية (اختياري)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="مثال: الأكثر مبيعاً ⭐ أو خصم 20%"
+                    value={badge}
+                    onChange={(e) => setBadge(e.target.value)}
+                    className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
+                  />
                 </div>
 
-                {/* Preset image selector buttons */}
                 <div>
-                  <span className="text-[11px] font-bold text-gray-400 block mb-1.5">
-                    اختر صورة جاهزة بضغطة واحدة:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {PRESET_IMAGES.map((img) => (
+                  <label className="text-xs font-bold text-gray-300 block mb-1">
+                    رابط الصورة أو مسارها <span className="text-[#00a3ff]">*</span>
+                  </label>
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      required
+                      placeholder="/images/... أو رابط خارجي"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      className="flex-1 bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
+                    />
+                  </div>
+                  {/* Preset Quick Images */}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    <span className="text-[11px] text-gray-400 self-center ml-1">صور جاهزة:</span>
+                    {PRESET_IMAGES.map((preset, idx) => (
                       <button
-                        key={img.url}
+                        key={idx}
                         type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setImageUrl(img.url);
-                        }}
-                        className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors cursor-pointer touch-manipulation ${
-                          imageUrl === img.url
-                            ? "bg-[#00a3ff] text-black border-[#00a3ff] font-black"
-                            : "bg-[#152034] text-gray-300 border-[#27405f] hover:border-[#00a3ff]"
+                        onClick={() => setImageUrl(preset.url)}
+                        className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors cursor-pointer ${
+                          imageUrl === preset.url
+                            ? "bg-[#00a3ff] text-black border-[#00a3ff] font-bold"
+                            : "bg-[#16223a] text-gray-300 border-[#27405f] hover:border-[#00a3ff]"
                         }`}
                       >
-                        {img.label}
+                        {preset.label}
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-gray-300 block mb-1">وصف المنتج ومواصفاته</label>
+                  <label className="text-xs font-bold text-gray-300 block mb-1">
+                    وصف المنتج ومميزاته التقنية
+                  </label>
                   <textarea
                     rows={3}
-                    placeholder="اكتب تفاصيل ومميزات المنتج التقنية..."
+                    placeholder="اكتب المواصفات الاحترافية (سرعة استجابة، مفاتيح ميكانيكية، إضاءة RGB...)"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  className="w-full btn-cyber-cyan text-black font-black text-sm py-3 rounded-xl cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>{editingProduct ? "حفظ التعديلات وتحديث كل الأجهزة 💾" : "إضافة المنتج للمتجر الآن 🚀"}</span>
-                </button>
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  {editingProduct && (
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      className="px-5 py-3 rounded-xl bg-[#1c2942] hover:bg-[#253859] text-gray-300 text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      إلغاء
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    className="px-6 py-3 rounded-xl bg-[#00a3ff] hover:bg-[#0088dd] text-black text-xs font-black shadow-[0_0_20px_rgba(0,163,255,0.4)] transition-all cursor-pointer flex items-center gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{editingProduct ? "حفظ التعديلات وتحديث المتجر 💾" : "إضافة المنتج للمتجر 🚀"}</span>
+                  </button>
+                </div>
               </form>
             </div>
 
-            {/* Section 2: Manage Existing Products List with Delete & Edit */}
-            <div className="p-6 rounded-2xl bg-[#101a2e] border border-[#1c2942] space-y-4">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-[#1c2942] pb-4">
-                <h4 className="text-sm font-black text-white flex items-center gap-1.5 font-['Cairo']">
-                  <span>قائمة المنتجات الحالية ({filteredList.length})</span>
-                </h4>
-
-                <div className="flex items-center gap-2.5 w-full sm:w-auto">
-                  <div className="relative flex-1 sm:w-48">
+            {/* Section 2: Products List & Management Table */}
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#101a2e] p-4 rounded-2xl border border-[#1c2942]">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="relative flex-1 sm:w-64">
                     <input
                       type="text"
-                      placeholder="بحث..."
+                      placeholder="ابحث في المنتجات..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full bg-[#16223a] border border-[#27405f] text-xs text-white rounded-xl pl-8 pr-3 py-1.5 focus:outline-none focus:border-[#00a3ff]"
+                      className="w-full bg-[#16223a] border border-[#27405f] text-xs text-white rounded-xl pl-8 pr-3 py-2.5 focus:outline-none focus:border-[#00a3ff]"
                     />
                     <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                   </div>
@@ -867,70 +881,106 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   <select
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value)}
-                    className="bg-[#16223a] border border-[#27405f] text-xs font-bold text-[#00a3ff] rounded-xl px-3 py-1.5 focus:outline-none focus:border-[#00a3ff]"
+                    className="bg-[#16223a] border border-[#27405f] text-xs font-bold text-[#00a3ff] rounded-xl px-3 py-2.5 focus:outline-none focus:border-[#00a3ff]"
                   >
-                    <option value="all">كل الأقسام</option>
-                    <option value="keyboards">كيبورد</option>
-                    <option value="mice">ماوس</option>
-                    <option value="mousepads">ماوس باد</option>
-                    <option value="microphones">مايك</option>
-                    <option value="headsets">سماعات</option>
+                    <option value="all">كل الأقسام ({products.length})</option>
+                    {CATEGORIES_META.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
                   </select>
+                </div>
+
+                <div className="text-xs font-mono text-gray-400">
+                  عرض {filteredList.length} من أصل {products.length} منتج
                 </div>
               </div>
 
-              <div className="space-y-2.5 max-h-96 overflow-y-auto">
+              {/* Products Table/Cards */}
+              <div className="space-y-2.5">
                 {filteredList.length > 0 ? (
-                  filteredList.map((p) => (
+                  filteredList.map((product) => (
                     <div
-                      key={p.id}
-                      className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#16223a]/50 border border-[#27405f]/50 hover:border-[#00a3ff]/40 transition-all"
+                      key={product.id}
+                      className="p-4 rounded-2xl bg-[#101a2e] border border-[#1c2942] hover:border-[#00a3ff]/40 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="relative w-12 h-12 rounded-lg bg-black/60 border border-[#27405f] overflow-hidden flex-shrink-0">
-                          <Image src={p.image} alt={p.title} fill className="object-contain p-1" />
+                      <div className="flex items-center gap-3.5">
+                        <div className="relative w-14 h-14 rounded-xl bg-black/60 border border-[#1c2942] overflow-hidden flex-shrink-0">
+                          <Image
+                            src={product.image}
+                            alt={product.title}
+                            fill
+                            className="object-contain p-1.5"
+                          />
                         </div>
-                        <div className="min-w-0 text-right">
+
+                        <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-tech text-[#00a3ff] uppercase">{p.brand}</span>
-                            <span className="text-[10px] text-gray-400 font-mono">#{p.id}</span>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#16223a] text-[#00a3ff] border border-[#27405f]">
+                              #{product.id}
+                            </span>
+                            <span className="text-[10px] font-tech uppercase text-gray-400">
+                              {product.brand}
+                            </span>
+                            {product.badge && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                {product.badge}
+                              </span>
+                            )}
                           </div>
-                          <h5 className="text-xs font-bold text-white truncate font-['Cairo']">{p.title}</h5>
-                          <span className="text-xs font-mono font-black text-emerald-400">{p.price} ₪</span>
+
+                          <h5 className="text-xs sm:text-sm font-bold text-white font-['Cairo']">
+                            {product.title}
+                          </h5>
+
+                          <div className="flex items-center gap-3 text-xs">
+                            <span className="font-mono font-black text-[#00a3ff]">
+                              {product.price} ₪
+                            </span>
+                            {product.originalPrice && (
+                              <span className="font-mono text-gray-500 line-through">
+                                {product.originalPrice} ₪
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      {/* Action Buttons with touch-manipulation for mobile */}
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-0 border-[#1c2942]">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            startEditProduct(p);
+                            startEditProduct(product);
                           }}
-                          className="p-2.5 rounded-xl bg-[#00a3ff]/15 hover:bg-[#00a3ff]/25 text-[#00a3ff] transition-all cursor-pointer touch-manipulation flex items-center justify-center"
-                          title="تعديل المنتج"
+                          className="px-3.5 py-2 rounded-xl bg-[#16223a] hover:bg-[#203250] text-[#00a3ff] border border-[#27405f] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer touch-manipulation"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>تعديل</span>
                         </button>
+
                         <button
                           type="button"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleDeleteProduct(p.id, p.title);
+                            handleDeleteProduct(product.id, product.title);
                           }}
-                          className="p-2.5 rounded-xl bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 transition-all cursor-pointer touch-manipulation flex items-center justify-center"
-                          title="حذف المنتج"
+                          className="px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer touch-manipulation"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>حذف</span>
                         </button>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-center text-xs text-gray-400 py-8">لا توجد منتجات مطابقة للبحث</p>
+                  <div className="p-12 text-center rounded-2xl bg-[#101a2e] border border-[#1c2942] space-y-3">
+                    <AlertCircle className="w-8 h-8 text-gray-500 mx-auto" />
+                    <p className="text-xs text-gray-400">لا توجد منتجات مطابقة للبحث أو الفلتر الحالي</p>
+                  </div>
                 )}
               </div>
             </div>
