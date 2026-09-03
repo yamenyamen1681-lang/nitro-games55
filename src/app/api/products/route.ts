@@ -89,7 +89,6 @@ export async function GET(request: Request) {
       );
     }
 
-    // إرجاع البيانات مع منع التخزين المؤقت تماماً (No Cache) لضمان عدم عودة المحذوف
     return NextResponse.json(
       { success: true, products: filtered },
       {
@@ -106,7 +105,6 @@ export async function GET(request: Request) {
   }
 }
 
-// POST: Add new product from Admin Dashboard
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -114,7 +112,7 @@ export async function POST(request: Request) {
 
     if (!title || !category || !price) {
       return NextResponse.json(
-        { success: false, message: "يرجى تعبئة الحقول الإلزامية: اسم المنتج، الفئة، والسعر" },
+        { success: false, message: "يرجى تعبئة الحقول الإلزامية" },
         { status: 400 }
       );
     }
@@ -152,28 +150,21 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       product: inserted,
-      message: "تمت إضافة المنتج بنجاح إلى قاعدة البيانات والمتجر!",
+      message: "تمت إضافة المنتج بنجاح!",
     });
   } catch (error) {
     console.error("Products API POST error:", error);
-    return NextResponse.json(
-      { success: false, message: "تعذر حفظ المنتج في قاعدة البيانات" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: "تعذر حفظ المنتج" }, { status: 500 });
   }
 }
 
-// PUT: Update existing product
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
     const { id, title, category, price, description, image, brand, badge, originalPrice } = body;
 
     if (!id || !title || !price) {
-      return NextResponse.json(
-        { success: false, message: "معرف المنتج وبياناته مطلوبة" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: "بيانات غير صالحة" }, { status: 400 });
     }
 
     const cleanPrice = Number(price);
@@ -199,46 +190,31 @@ export async function PUT(request: Request) {
       .where(eq(products.id, Number(id)))
       .returning();
 
-    return NextResponse.json({
-      success: true,
-      product: updated,
-      message: "تم تحديث بيانات المنتج بنجاح!",
-    });
+    return NextResponse.json({ success: true, product: updated });
   } catch (error) {
     console.error("Products API PUT error:", error);
-    return NextResponse.json(
-      { success: false, message: "تعذر تحديث المنتج" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: "تعذر التحديث" }, { status: 500 });
   }
 }
 
-// DELETE: Delete product permanently
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json(
-        { success: false, message: "معرف المنتج مطلوب" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: "معرف المنتج مطلوب" }, { status: 400 });
     }
 
     const numericId = Number(id);
 
-    // تنفيذ الحذف الفعلي من قاعدة البيانات والتحقق من تنفيذه
     const deletedRows = await db
       .delete(products)
       .where(eq(products.id, numericId))
       .returning();
 
     if (!deletedRows || deletedRows.length === 0) {
-      return NextResponse.json(
-        { success: false, message: "المنتج غير موجود أو تم حذفه مسبقاً" },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: "المنتج غير موجود" }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -247,9 +223,6 @@ export async function DELETE(request: Request) {
     });
   } catch (error) {
     console.error("Products API DELETE error:", error);
-    return NextResponse.json(
-      { success: false, message: "تعذر حذف المنتج من السيرفر" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: "تعذر الحذف" }, { status: 500 });
   }
 }
