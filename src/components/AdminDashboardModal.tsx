@@ -187,8 +187,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         : 0;
 
     if (editingProduct) {
-      // Persist to the database first — this is the source of truth every
-      // device reads from, so we wait for it before updating the UI.
       try {
         const res = await fetch("/api/products", {
           method: "PUT",
@@ -232,7 +230,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         return;
       }
     } else {
-      // Insert in the database first so every device gets the same real ID
       try {
         const res = await fetch("/api/products", {
           method: "POST",
@@ -264,13 +261,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   };
 
   const handleDeleteProduct = async (id: number, prodTitle: string) => {
-    // استخدام حوار تأكيد مباشر وخفيف يعمل على كافة الهواتف
     if (!window.confirm(`حذف نهائي للمنتج: "${prodTitle}"؟`)) {
       return;
     }
 
-    // تحديث الواجهة فوراً (Optimistic Update) لضمان الاستجابة السريعة
     const previousProducts = [...products];
+    // تحديث الواجهة فوراً لضمان عدم عودة المنتج
     onProductsUpdate(products.filter((p) => p.id !== id));
     showToast("جاري حذف المنتج...");
 
@@ -282,7 +278,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       showToast("تم حذف المنتج من المتجر بنجاح 🗑️");
     } catch (err) {
       console.warn("Product delete error:", err);
-      // التراجع في حال حدوث خطأ بالسيرفر
       onProductsUpdate(previousProducts);
       showToast("تعذر الاتصال بقاعدة البيانات للحذف ⚠️");
     }
@@ -298,7 +293,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-5xl rounded-2xl bg-[#0b1120] border border-[#00a3ff]/30 shadow-[0_0_40px_rgba(0,163,255,0.2)] overflow-hidden my-8 text-right">
+      <div className="relative w-full max-w-5xl rounded-2xl bg-[#0b1120] border border-[#00a3ff]/35 shadow-[0_0_40px_rgba(0,163,255,0.2)] overflow-hidden my-8 text-right">
         {/* Top Header */}
         <div className="p-6 pb-4 border-b border-[#1c2942] bg-[#120e09] flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -339,7 +334,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           </div>
         </div>
 
-        {/* Tab switcher (only after login) */}
+        {/* Tab switcher */}
         {isAuthenticated && (
           <div className="px-6 pt-5 flex items-center gap-2 border-b border-[#1c2942]">
             <button
@@ -369,7 +364,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
         {/* Modal Body */}
         {!isAuthenticated ? (
-          /* Login Form */
           <div className="p-8 sm:p-12 max-w-md mx-auto text-center space-y-6">
             <div className="w-16 h-16 rounded-2xl bg-[#1e170e] border border-[#00a3ff]/30 flex items-center justify-center mx-auto text-[#00a3ff] shadow-[0_0_20px_rgba(0,163,255,0.2)]">
               <Lock className="w-8 h-8" />
@@ -422,7 +416,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             </form>
           </div>
         ) : tab === "showcase" ? (
-          /* ===================== SHOWCASE CONTROL PANEL ===================== */
           <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
             <div className="p-5 rounded-2xl bg-[#0b1120] border border-[#1c2942] space-y-5">
               <div className="flex items-center justify-between border-b border-[#1c2942] pb-3">
@@ -666,9 +659,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             </button>
           </div>
         ) : (
-          /* Authenticated Dashboard - Products Management */
           <div className="p-6 space-y-8 max-h-[75vh] overflow-y-auto">
-            {/* Section 1: Add / Edit Product Form */}
             <div
               id="admin-product-form"
               className="p-6 rounded-2xl bg-[#101a2e] border border-[#1c2942] space-y-5"
@@ -727,13 +718,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     <select
                       value={category}
                       onChange={(e) => setCategory(e.target.value as CategoryType)}
-                      className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm font-bold text-[#00a3ff] rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
+                      className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
                     >
-                      <option value="keyboards">⌨️ كيبورد</option>
-                      <option value="mice">🖱️ ماوس</option>
-                      <option value="mousepads">⬛ ماوس باد</option>
-                      <option value="audio">🎧 سماعات ومايكروفونات</option>
-                      <option value="accessories">⚡ إكسسوارات وقطع مخصصة</option>
+                      {CATEGORIES_META.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -745,12 +736,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     </label>
                     <input
                       type="number"
-                      step="0.01"
                       required
-                      placeholder="مثال: 599"
+                      min="1"
+                      placeholder="599"
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
-                      className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
+                      className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff] font-mono"
                     />
                   </div>
 
@@ -760,11 +751,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     </label>
                     <input
                       type="number"
-                      step="0.01"
-                      placeholder="مثال: 749"
+                      min="0"
+                      placeholder="749"
                       value={originalPrice}
                       onChange={(e) => setOriginalPrice(e.target.value)}
-                      className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
+                      className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff] font-mono"
                     />
                   </div>
 
@@ -774,7 +765,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     </label>
                     <input
                       type="text"
-                      placeholder="مثال: Wooting / Pulsar / Nitro Games"
+                      placeholder="Wooting / Pulsar / Nitro Games"
                       value={brand}
                       onChange={(e) => setBrand(e.target.value)}
                       className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
@@ -784,11 +775,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
                 <div>
                   <label className="text-xs font-bold text-gray-300 block mb-1">
-                    الشارة الترويجية (اختياري)
+                    شارة ترويجية (اختياري)
                   </label>
                   <input
                     type="text"
-                    placeholder="مثال: الأكثر مبيعاً ⭐ أو خصم 20%"
+                    placeholder="الأكثر مبيعاً ⭐ أو خصم 20%"
                     value={badge}
                     onChange={(e) => setBadge(e.target.value)}
                     className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
@@ -797,33 +788,34 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
                 <div>
                   <label className="text-xs font-bold text-gray-300 block mb-1">
-                    رابط الصورة أو مسارها <span className="text-[#00a3ff]">*</span>
+                    صورة المنتج (رابط أو مسارها)
                   </label>
                   <div className="flex gap-2 mb-2">
                     <input
                       type="text"
-                      required
-                      placeholder="/images/... أو رابط خارجي"
                       value={imageUrl}
                       onChange={(e) => setImageUrl(e.target.value)}
-                      className="flex-1 bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
+                      placeholder="/images/keyboard-custom-rgb.jpg"
+                      className="flex-1 bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff] font-mono"
                     />
                   </div>
-                  {/* Preset Quick Images */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
-                    <span className="text-[11px] text-gray-400 self-center ml-1">صور جاهزة:</span>
-                    {PRESET_IMAGES.map((preset, idx) => (
+                    {PRESET_IMAGES.map((img, idx) => (
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => setImageUrl(preset.url)}
-                        className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors cursor-pointer ${
-                          imageUrl === preset.url
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setImageUrl(img.url);
+                        }}
+                        className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors cursor-pointer touch-manipulation ${
+                          imageUrl === img.url
                             ? "bg-[#00a3ff] text-black border-[#00a3ff] font-bold"
                             : "bg-[#16223a] text-gray-300 border-[#27405f] hover:border-[#00a3ff]"
                         }`}
                       >
-                        {preset.label}
+                        {img.label}
                       </button>
                     ))}
                   </div>
@@ -835,45 +827,49 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   </label>
                   <textarea
                     rows={3}
-                    placeholder="اكتب المواصفات الاحترافية (سرعة استجابة، مفاتيح ميكانيكية، إضاءة RGB...)"
+                    placeholder="المواصفات الاحترافية (سرعة الاستجابة، ميكانيكية، إضاءة RGB)..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-2">
+                <div className="flex justify-end gap-3 pt-2">
                   {editingProduct && (
                     <button
                       type="button"
-                      onClick={cancelEdit}
-                      className="px-5 py-3 rounded-xl bg-[#1c2942] hover:bg-[#253859] text-gray-300 text-xs font-bold transition-colors cursor-pointer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        cancelEdit();
+                      }}
+                      className="px-5 py-3 rounded-xl bg-[#1c2942] text-gray-300 text-xs font-bold hover:bg-[#27405f] transition-colors cursor-pointer touch-manipulation"
                     >
                       إلغاء
                     </button>
                   )}
                   <button
                     type="submit"
-                    className="px-6 py-3 rounded-xl bg-[#00a3ff] hover:bg-[#0088dd] text-black text-xs font-black shadow-[0_0_20px_rgba(0,163,255,0.4)] transition-all cursor-pointer flex items-center gap-2"
+                    className="px-6 py-3 rounded-xl bg-[#00a3ff] text-black text-xs font-black hover:bg-[#0088cc] transition-all shadow-[0_0_15px_rgba(0,163,255,0.3)] cursor-pointer touch-manipulation flex items-center gap-2"
                   >
                     <Save className="w-4 h-4" />
-                    <span>{editingProduct ? "حفظ التعديلات وتحديث المتجر 💾" : "إضافة المنتج للمتجر 🚀"}</span>
+                    <span>{editingProduct ? "حفظ التعديلات وجعلها مباشرة" : "إضافة المنتج للمتجر فوراً 🚀"}</span>
                   </button>
                 </div>
               </form>
             </div>
 
-            {/* Section 2: Products List & Management Table */}
+            {/* Section 2: Products List & Management */}
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#101a2e] p-4 rounded-2xl border border-[#1c2942]">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#101a2e] p-4 rounded-2xl border border-[#1c2942]">
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   <div className="relative flex-1 sm:w-64">
                     <input
                       type="text"
-                      placeholder="ابحث في المنتجات..."
+                      placeholder="بحث في المنتجات..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full bg-[#16223a] border border-[#27405f] text-xs text-white rounded-xl pl-8 pr-3 py-2.5 focus:outline-none focus:border-[#00a3ff]"
+                      className="w-full bg-[#16223a] border border-[#27405f] text-xs text-white rounded-xl pl-8 pr-3 py-2 focus:outline-none focus:border-[#00a3ff]"
                     />
                     <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                   </div>
@@ -881,105 +877,86 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   <select
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value)}
-                    className="bg-[#16223a] border border-[#27405f] text-xs font-bold text-[#00a3ff] rounded-xl px-3 py-2.5 focus:outline-none focus:border-[#00a3ff]"
+                    className="bg-[#16223a] border border-[#27405f] text-xs font-bold text-[#00a3ff] rounded-xl px-3 py-2 focus:outline-none focus:border-[#00a3ff]"
                   >
-                    <option value="all">كل الأقسام ({products.length})</option>
-                    {CATEGORIES_META.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
+                    <option value="all">كل الأقسام</option>
+                    {CATEGORIES_META.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </select>
                 </div>
 
-                <div className="text-xs font-mono text-gray-400">
-                  عرض {filteredList.length} من أصل {products.length} منتج
+                <div className="text-xs text-gray-400 font-mono">
+                  إجمالي المنتجات الظاهرة: <strong className="text-white">{filteredList.length}</strong>
                 </div>
               </div>
 
-              {/* Products Table/Cards */}
               <div className="space-y-2.5">
                 {filteredList.length > 0 ? (
-                  filteredList.map((product) => (
+                  filteredList.map((p) => (
                     <div
-                      key={product.id}
-                      className="p-4 rounded-2xl bg-[#101a2e] border border-[#1c2942] hover:border-[#00a3ff]/40 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                      key={p.id}
+                      className="p-3.5 rounded-2xl bg-[#101a2e] border border-[#1c2942] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-[#00a3ff]/40 transition-colors"
                     >
-                      <div className="flex items-center gap-3.5">
+                      <div className="flex items-center gap-3.5 w-full sm:w-auto">
                         <div className="relative w-14 h-14 rounded-xl bg-black/60 border border-[#1c2942] overflow-hidden flex-shrink-0">
-                          <Image
-                            src={product.image}
-                            alt={product.title}
-                            fill
-                            className="object-contain p-1.5"
-                          />
+                          <Image src={p.image} alt={p.title} fill className="object-contain p-1" />
                         </div>
 
-                        <div className="space-y-1">
+                        <div className="space-y-1 min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#16223a] text-[#00a3ff] border border-[#27405f]">
-                              #{product.id}
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#00a3ff]/15 text-[#00a3ff] border border-[#00a3ff]/30">
+                              #{p.id}
                             </span>
-                            <span className="text-[10px] font-tech uppercase text-gray-400">
-                              {product.brand}
-                            </span>
-                            {product.badge && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                                {product.badge}
-                              </span>
-                            )}
+                            <span className="text-[11px] font-tech text-gray-400 uppercase">{p.brand}</span>
                           </div>
-
-                          <h5 className="text-xs sm:text-sm font-bold text-white font-['Cairo']">
-                            {product.title}
+                          <h5 className="text-xs sm:text-sm font-bold text-white truncate font-['Cairo']">
+                            {p.title}
                           </h5>
-
-                          <div className="flex items-center gap-3 text-xs">
-                            <span className="font-mono font-black text-[#00a3ff]">
-                              {product.price} ₪
-                            </span>
-                            {product.originalPrice && (
-                              <span className="font-mono text-gray-500 line-through">
-                                {product.originalPrice} ₪
-                              </span>
-                            )}
-                          </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-0 border-[#1c2942]">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            startEditProduct(product);
-                          }}
-                          className="px-3.5 py-2 rounded-xl bg-[#16223a] hover:bg-[#203250] text-[#00a3ff] border border-[#27405f] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer touch-manipulation"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                          <span>تعديل</span>
-                        </button>
+                      <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 border-[#1c2942]">
+                        <div className="text-left font-mono">
+                          <div className="text-xs sm:text-sm font-black text-[#00a3ff]">{p.price} ₪</div>
+                          {p.originalPrice && (
+                            <div className="text-[10px] text-gray-500 line-through">{p.originalPrice} ₪</div>
+                          )}
+                        </div>
 
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleDeleteProduct(product.id, product.title);
-                          }}
-                          className="px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer touch-manipulation"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>حذف</span>
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              startEditProduct(p);
+                            }}
+                            className="px-3 py-2 rounded-xl bg-[#16223a] hover:bg-[#00a3ff] hover:text-black text-gray-200 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer touch-manipulation"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                            <span>تعديل</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDeleteProduct(p.id, p.title);
+                            }}
+                            className="px-3 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer touch-manipulation border border-rose-500/30"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>حذف</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="p-12 text-center rounded-2xl bg-[#101a2e] border border-[#1c2942] space-y-3">
-                    <AlertCircle className="w-8 h-8 text-gray-500 mx-auto" />
-                    <p className="text-xs text-gray-400">لا توجد منتجات مطابقة للبحث أو الفلتر الحالي</p>
+                  <div className="p-8 text-center bg-[#101a2e] rounded-2xl border border-[#1c2942] text-gray-400 text-xs">
+                    لا توجد منتجات مطابقة لعملية البحث
                   </div>
                 )}
               </div>
