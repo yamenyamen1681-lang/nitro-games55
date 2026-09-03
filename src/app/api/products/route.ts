@@ -11,20 +11,14 @@ export async function GET(request: Request) {
     const category = searchParams.get("category");
     const query = searchParams.get("q")?.toLowerCase();
 
-    // تهيئة الجداول تلقائياً عند أول تشغيل
+    // تهيئة الجداول تلقائياً عند أول تشغيل فقط
     await ensureDbReady();
 
     let dbProducts = await db.select().from(products);
 
-    const validCategories = ["keyboards", "mice", "mousepads", "microphones", "headsets"];
-    const hasAllFive = validCategories.every((cat) =>
-      dbProducts.some((p) => p.category === cat)
-    );
-
-    // If database is empty or missing any of the 5 categories, seed from INITIAL_PRODUCTS
-    if (!dbProducts || dbProducts.length === 0 || !hasAllFive) {
+    // التحقق فقط إذا كانت القاعدة فارغة تماماً لأول مرة (وليس عند حذف منتج معين)
+    if (!dbProducts || dbProducts.length === 0) {
       try {
-        await db.delete(products);
         for (const item of INITIAL_PRODUCTS) {
           await db.insert(products).values({
             slug: item.slug,
@@ -52,6 +46,8 @@ export async function GET(request: Request) {
       }
     }
 
+    const validCategories = ["keyboards", "mice", "mousepads", "microphones", "headsets"];
+
     const items: Product[] = (dbProducts && dbProducts.length > 0)
       ? dbProducts
           .filter((p) => validCategories.includes(p.category))
@@ -75,7 +71,7 @@ export async function GET(request: Request) {
             specs: (p.specs as string[]) ?? [],
             isFeatured: p.isFeatured,
           }))
-      : INITIAL_PRODUCTS;
+      : [];
 
     let filtered = items;
 
@@ -96,7 +92,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ success: true, products: filtered });
   } catch (error) {
     console.error("Products API GET error:", error);
-    return NextResponse.json({ success: true, products: INITIAL_PRODUCTS });
+    return NextResponse.json({ success: false, products: [] });
   }
 }
 
@@ -233,4 +229,4 @@ export async function DELETE(request: Request) {
       { status: 500 }
     );
   }
-      }
+}
