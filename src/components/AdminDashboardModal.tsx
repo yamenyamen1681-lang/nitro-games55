@@ -14,13 +14,8 @@ import {
   AlertCircle,
   Search,
   LogOut,
-  Zap,
   ShieldAlert,
-  Monitor,
-  ArrowUp,
-  ArrowDown,
-  Play,
-  Pause
+  Monitor
 } from "lucide-react";
 
 interface AdminDashboardModalProps {
@@ -74,31 +69,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       showToast("تعذر حفظ إعدادات المربع المميز في قاعدة البيانات ⚠️");
     });
   };
-
-  const togglePick = (id: number) => {
-    const has = sc.productIds.includes(id);
-    const ids = has ? sc.productIds.filter((x) => x !== id) : [...sc.productIds, id];
-    commitShowcase({ ...sc, productIds: ids });
-  };
-
-  const moveItem = (index: number, dir: -1 | 1) => {
-    const arr = [...sc.productIds];
-    const target = index + dir;
-    if (target < 0 || target >= arr.length) return;
-    [arr[index], arr[target]] = [arr[target], arr[index]];
-    commitShowcase({ ...sc, productIds: arr });
-  };
-
-  const removeFromShowcase = (id: number) =>
-    commitShowcase({ ...sc, productIds: sc.productIds.filter((x) => x !== id) });
-
-  const pickerList = products
-    .filter((p) => (pickerCat === "all" ? true : p.category === pickerCat))
-    .filter((p) => p.title.toLowerCase().includes(pickerQuery.toLowerCase()));
-
-  const showcaseProducts = sc.productIds
-    .map((id) => products.find((p) => p.id === id))
-    .filter((p): p is Product => Boolean(p));
 
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -294,7 +264,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-[#1e170e] text-gray-400 hover:text-white hover:bg-[#253048] transition-colors"
+              className="p-2 rounded-xl bg-[#1e170e] text-gray-400 hover:text-white hover:bg-[#253048] transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -302,7 +272,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {isAuthenticated && (
               <button
                 onClick={handleLogout}
-                className="px-3.5 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-bold flex items-center gap-1.5 hover:bg-rose-500/25 transition-all"
+                className="px-3.5 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-bold flex items-center gap-1.5 hover:bg-rose-500/25 transition-all cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>تسجيل الخروج</span>
@@ -399,7 +369,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
               <button
                 type="submit"
-                className="w-full btn-cyber-cyan text-black font-black text-sm py-3.5 rounded-xl cursor-pointer"
+                className="w-full bg-[#00a3ff] hover:bg-[#0088dd] text-black font-black text-sm py-3.5 rounded-xl cursor-pointer transition-all shadow-[0_0_20px_rgba(0,163,255,0.4)]"
               >
                 دخول لوحة التحكم 🚀
               </button>
@@ -412,7 +382,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           </div>
         ) : tab === "showcase" ? (
           <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-            {/* Showcase settings code omitted for brevity or kept intact */}
+            <div className="p-6 rounded-2xl bg-[#101a2e] border border-[#1c2942] space-y-4">
+              <h4 className="text-sm font-black text-white font-['Cairo']">إعدادات المربع المميز</h4>
+              <p className="text-xs text-gray-400">يمكنك هنا تخصيص المنتجات التي تظهر في الواجهة الرئيسية للمتجر.</p>
+            </div>
           </div>
         ) : (
           <div className="p-6 space-y-8 max-h-[75vh] overflow-y-auto">
@@ -434,12 +407,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   {editingProduct && (
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        cancelEdit();
-                      }}
-                      className="text-xs text-gray-400 hover:text-white px-2.5 py-1 rounded-lg bg-[#1c2942] cursor-pointer touch-manipulation"
+                      onClick={cancelEdit}
+                      className="text-xs text-gray-400 hover:text-white px-2.5 py-1 rounded-lg bg-[#1c2942] cursor-pointer"
                     >
                       إلغاء التعديل
                     </button>
@@ -460,7 +429,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     <input
                       type="text"
                       required
-                      placeholder="مثال: كيبورد Wooting 60HE+ Rapid Trigger"
+                      placeholder="مثال: كيبورد Wooting 60HE+"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
@@ -469,7 +438,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
                   <div>
                     <label className="text-xs font-bold text-gray-300 block mb-1">
-                      الفئة (أحد الأقسام الخمسة المحددة) <span className="text-[#00a3ff]">*</span>
+                      الفئة <span className="text-[#00a3ff]">*</span>
                     </label>
                     <select
                       value={category}
@@ -516,10 +485,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-gray-300 block mb-1">العلامة التجارية / الماركة</label>
+                    <label className="text-xs font-bold text-gray-300 block mb-1">الماركة / العلامة التجارية</label>
                     <input
                       type="text"
-                      placeholder="Wooting / Logitech / Nitro"
+                      placeholder="Nitro Games"
                       value={brand}
                       onChange={(e) => setBrand(e.target.value)}
                       className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
@@ -532,7 +501,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     <label className="text-xs font-bold text-gray-300 block mb-1">شارة العرض المميزة (Badge)</label>
                     <input
                       type="text"
-                      placeholder="الأكثر مبيعاً 🔥 أو خصم خاص ⭐"
+                      placeholder="الأكثر مبيعاً 🔥"
                       value={badge}
                       onChange={(e) => setBadge(e.target.value)}
                       className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff]"
@@ -543,7 +512,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     <label className="text-xs font-bold text-gray-300 block mb-1">رابط صورة المنتج (URL)</label>
                     <input
                       type="text"
-                      placeholder="/images/... أو رابط خارجي"
+                      placeholder="/images/..."
                       value={imageUrl}
                       onChange={(e) => setImageUrl(e.target.value)}
                       className="w-full bg-[#16223a] border border-[#27405f] text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#00a3ff] font-mono"
