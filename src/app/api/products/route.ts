@@ -203,7 +203,7 @@ export async function PUT(request: Request) {
   }
 }
 
-// DELETE: Delete product
+// DELETE: Delete product permanently
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -216,16 +216,29 @@ export async function DELETE(request: Request) {
       );
     }
 
-    await db.delete(products).where(eq(products.id, Number(id)));
+    const numericId = Number(id);
+
+    // تنفيذ الحذف الفعلي من قاعدة البيانات والتحقق من تنفيذه
+    const deletedRows = await db
+      .delete(products)
+      .where(eq(products.id, numericId))
+      .returning();
+
+    if (!deletedRows || deletedRows.length === 0) {
+      return NextResponse.json(
+        { success: false, message: "المنتج غير موجود أو تم حذفه مسبقاً" },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      message: "تم حذف المنتج بنجاح من المتجر",
+      message: "تم حذف المنتج بنجاح نهائياً من قاعدة البيانات",
     });
   } catch (error) {
     console.error("Products API DELETE error:", error);
     return NextResponse.json(
-      { success: false, message: "تعذر حذف المنتج" },
+      { success: false, message: "تعذر حذف المنتج من السيرفر" },
       { status: 500 }
     );
   }
